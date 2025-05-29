@@ -58,3 +58,10 @@ for col in Y_test.columns:
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+import joblib
+
+# Save model and scalers
+joblib.dump(model, 'mlp_model.pkl')
+joblib.dump(X_scaler, 'x_scaler.pkl')
+joblib.dump(Y_scaler, 'y_scaler.pkl')
