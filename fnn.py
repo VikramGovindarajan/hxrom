@@ -6,8 +6,8 @@ from sklearn.metrics import mean_squared_error
 
 # Load data
 df = pd.read_csv('heat_exchanger_data.csv')
-X = df[['T_in_hot', 'T_in_cold', 'm_dot_hot', 'm_dot_cold']]
-Y = df[['T_out_hot', 'T_out_cold', 'Q']]
+X = df[['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']]
+Y = df[['T_out_pri', 'T_out_sec', 'Q']]
 
 # Train/test split
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
@@ -42,8 +42,8 @@ print(f"MSE: {mse}")
 import matplotlib.pyplot as plt
 
 # Convert predicted and true outputs to DataFrame for easy plotting
-Y_test_df = pd.DataFrame(Y_test, columns=['T_out_hot', 'T_out_cold', 'Q'], index=X_test.index)
-Y_pred_df = pd.DataFrame(Y_pred, columns=['T_out_hot', 'T_out_cold', 'Q'], index=X_test.index)
+Y_test_df = pd.DataFrame(Y_test, columns=['T_out_pri', 'T_out_sec', 'Q'], index=X_test.index)
+Y_pred_df = pd.DataFrame(Y_pred, columns=['T_out_pri', 'T_out_sec', 'Q'], index=X_test.index)
 
 # Plot predicted vs actual for each output
 for col in Y_test.columns:
