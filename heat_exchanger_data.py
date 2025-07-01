@@ -7,7 +7,7 @@ n_samples = 100
 
 # Inputs: random but realistic
 T_in_pri = np.random.uniform(540, 560, n_samples)      # K
-T_in_sec = np.random.uniform(345, 355, n_samples)     # K
+T_in_sec = np.random.uniform(345, 365, n_samples)     # K
 m_dot_pri = np.random.uniform(1400., 1600.0, n_samples)      # kg/s
 m_dot_sec = np.random.uniform(1400., 1500.0, n_samples)     # kg/s
 
