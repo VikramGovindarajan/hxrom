@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 # Load and prepare data
 df = pd.read_csv('transient_data.csv')
 
-inputs = ['T_in_hot', 'T_in_cold', 'm_dot_hot', 'm_dot_cold']
-outputs = ['T_out_hot', 'T_out_cold', 'Q']
+inputs = ['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']
+outputs = ['T_out_pri', 'T_out_sec', 'Q']
 
 X = df[inputs].values
 Y = df[outputs].values
@@ -29,7 +29,7 @@ def create_sequences(X, Y, window=10):
         Y_seq.append(Y[i+window])
     return np.array(X_seq), np.array(Y_seq)
 
-X_seq, Y_seq = create_sequences(X_scaled, Y_scaled, window=10)
+X_seq, Y_seq = create_sequences(X_scaled, Y_scaled, window=1)
 
 # Train/test split
 split = int(0.8 * len(X_seq))
