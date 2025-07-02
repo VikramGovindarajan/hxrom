@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 df = pd.read_csv('transient_data.csv')
 
 inputs = ['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']
-outputs = ['T_out_pri', 'T_out_sec', 'Q']
+outputs = ['T_out_pri', 'T_out_sec']
 
 X = df[inputs].values
 Y = df[outputs].values
