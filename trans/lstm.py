@@ -1,3 +1,4 @@
+#lstm.py
 import sys
 import numpy as np
 import pandas as pd
@@ -10,27 +11,62 @@ with open('sequences.pkl', 'rb') as f:
 
 ## Prepare Data for LSTM
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+import pandas as pd
 
-# Flatten and normalize
+# Flatten all sequences for global scaling
 full_data = pd.concat(sequences, ignore_index=True)
 
-input_cols = ['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']
+input_cols_base = ['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']
 output_cols = ['T_out_pri', 'T_out_sec']
 
+# Initialize scalers
 scaler_x = MinMaxScaler()
 scaler_y = MinMaxScaler()
 
-X_all = scaler_x.fit_transform(full_data[input_cols])
-Y_all = scaler_y.fit_transform(full_data[output_cols])
+# Fit scalers
+scaler_x.fit(full_data[input_cols_base + output_cols])  # Include T_out_* for prev input
+scaler_y.fit(full_data[output_cols])
 
-# Rebuild sequences: shape = (num_seq, time_steps, features)
-n_seq = len(sequences)
-time_steps = len(sequences[0])
+# Prepare X, Y with T_out_prev included
+X_list = []
+Y_list = []
 
-X = X_all.reshape(n_seq, time_steps, len(input_cols))
-Y = Y_all.reshape(n_seq, time_steps, len(output_cols))
+for df in sequences:
+    X_seq = []
+    Y_seq = []
 
-# Split
+    # Initial previous outlet temperature = nominal
+    T_out_prev = [384.656085, 526.0454296661194]
+
+    for i in range(len(df)):
+        row = df.iloc[i]
+
+        X_row = [
+            row['T_in_pri'], row['T_in_sec'],
+            row['m_dot_pri'], row['m_dot_sec'],
+            T_out_prev[0], T_out_prev[1]
+        ]
+        Y_row = [row['T_out_pri'], row['T_out_sec']]
+
+        # Update for next time step
+        T_out_prev = Y_row
+
+        # Scale and store
+        X_scaled = scaler_x.transform([X_row])[0]
+        Y_scaled = scaler_y.transform([Y_row])[0]
+
+        X_seq.append(X_scaled)
+        Y_seq.append(Y_scaled)
+
+    X_list.append(X_seq)
+    Y_list.append(Y_seq)
+
+# Convert to numpy arrays
+X = np.array(X_list)  # shape: (n_seq, time_steps, 6)
+Y = np.array(Y_list)  # shape: (n_seq, time_steps, 2)
+
+# Train/val split
 from sklearn.model_selection import train_test_split
 X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.2, random_state=42)
 
@@ -42,9 +78,9 @@ from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.callbacks import EarlyStopping
 
 model = Sequential([
-    LSTM(64, input_shape=(time_steps, len(input_cols)), return_sequences=True),
+    LSTM(64, input_shape=(100, 6), return_sequences=True),
     Dense(32, activation='relu'),
-    Dense(len(output_cols))
+    Dense(2)
 ])
 
 model.compile(optimizer='adam', loss='mse')

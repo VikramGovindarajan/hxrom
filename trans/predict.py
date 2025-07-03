@@ -2,50 +2,51 @@ import pandas as pd
 import numpy as np
 from tensorflow.keras.models import load_model
 import joblib
+import matplotlib.pyplot as plt
 
-# Load the scaler
+# === Load model and scalers ===
+model = load_model('lstm_model.keras')
 scaler_x = joblib.load('scaler_x.pkl')
 scaler_y = joblib.load('scaler_y.pkl')
 
-# Load the saved model
-model = load_model('lstm_model.keras')
-
-# Load the new input sequence
+# === Load new input sequence ===
 X_new_df = pd.read_csv('predict_trans.csv')
-
-# Check column order
 required_columns = ['T_in_pri', 'T_in_sec', 'm_dot_pri', 'm_dot_sec']
-assert all(col in X_new_df.columns for col in required_columns), "Missing columns in CSV"
+assert all(col in X_new_df.columns for col in required_columns), "Missing input columns"
 
-# Normalize using the scaler from training
-X_new_scaled = scaler_x.transform(X_new_df[required_columns])  # scaler_x from training
+# === Inference Parameters ===
+T_out_prev = [384.656085, 526.0454296661194]  # nominal initial outputs
+X_seq_scaled = []
+predictions = []
 
-# Reshape for LSTM: (1, time_steps, num_features)
-X_new_seq = X_new_scaled.reshape(1, X_new_scaled.shape[0], X_new_scaled.shape[1])
+# === Step-by-step prediction using model ===
+for i in range(len(X_new_df)):
+    row = X_new_df.iloc[i]
 
-# Predict
-Y_new_pred_scaled = model.predict(X_new_seq)  # shape: (1, time_steps, 2)
+    # Build full input including T_out_prev
+    x_full = [
+        row['T_in_pri'], row['T_in_sec'],
+        row['m_dot_pri'], row['m_dot_sec'],
+        T_out_prev[0], T_out_prev[1]
+    ]
 
-# Inverse transform to get actual temperatures
-Y_new_pred = scaler_y.inverse_transform(Y_new_pred_scaled[0])  # shape: (time_steps, 2)
+    x_scaled = scaler_x.transform([x_full]).reshape(1, 1, -1)
+    y_scaled = model.predict(x_scaled, verbose=0)  # shape (1, 1, 2)
+    y = scaler_y.inverse_transform(y_scaled.reshape(1, -1))[0]  # fix here
 
-# Save predicted outputs
+    predictions.append(y)
+    T_out_prev = y  # Feed prediction into next step
+
+# === Convert predictions to DataFrame ===
+Y_new_pred = np.array(predictions)
 Y_new_df = pd.DataFrame(Y_new_pred, columns=['T_out_pri', 'T_out_sec'])
 Y_new_df.to_csv('Y_new_pred.csv', index=False)
 
-import matplotlib.pyplot as plt
-
-# Time steps
-time = np.arange(Y_new_pred.shape[0])  # assuming shape = (time_steps, 2)
-
-# Extract predictions
-T_out_pri = Y_new_pred[:, 0]
-T_out_sec = Y_new_pred[:, 1]
-
-# Plotting
+# === Plot ===
+time = np.arange(len(Y_new_df))
 plt.figure(figsize=(10, 5))
-plt.plot(time, T_out_pri, label='Predicted T_out_pri', color='tab:red')
-plt.plot(time, T_out_sec, label='Predicted T_out_sec', color='tab:blue')
+plt.plot(time, Y_new_df['T_out_pri'], label='Predicted T_out_pri', color='tab:red')
+plt.plot(time, Y_new_df['T_out_sec'], label='Predicted T_out_sec', color='tab:blue')
 plt.xlabel('Time step')
 plt.ylabel('Temperature (°C)')
 plt.title('Predicted Outlet Temperatures from LSTM')

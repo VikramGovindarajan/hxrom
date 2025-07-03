@@ -1,3 +1,4 @@
+#generate_data.py
 import sys
 import numpy as np
 import pandas as pd
@@ -82,10 +83,11 @@ for _ in range(100):
     df = simulate_physics_model_from_nominal(perturb_funcs, steps=100)
     sequences.append(df)
 
-# Add 1 steady-state sequence (no perturbation)
+# Add steady-state sequences (no perturbation)
 perturb_funcs_steady = [lambda t: 0.0] * 4
-df_steady = simulate_physics_model_from_nominal(perturb_funcs_steady, steps=100)
-sequences.append(df_steady)
+for _ in range(20):
+    df = simulate_physics_model_from_nominal([lambda t: 0.0]*4, steps=100)
+    sequences.append(df)
 
 import pickle
 
